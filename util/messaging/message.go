@@ -4,7 +4,6 @@
 package messaging
 
 import (
-	"fmt"
 	"jasdel/explore/entity/thing"
 )
 
@@ -21,8 +20,6 @@ type Responder interface {
 func Respond(t thing.Interface, format string, any ...interface{}) {
 	if responder, ok := t.(Responder); ok {
 		responder.Respond(format, any...)
-	} else {
-		fmt.Println("Cannot respond to", t.Name(), "not a Responder")
 	}
 }
 

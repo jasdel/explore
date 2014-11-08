@@ -12,7 +12,7 @@ import (
 type actorMove struct {
 	actor actor.Interface
 	toLoc location.Interface
-	start bool
+	spawn bool
 }
 
 // Processes a group of locations within a single go routine
@@ -23,9 +23,9 @@ type Area struct {
 	actors []actor.Interface
 	locs   []location.Interface
 
-	addLocCh    chan location.Interface
-	cmdCh       chan *command.Command
-	moveActorCh chan actorMove
+	addLocCh chan location.Interface
+	cmdCh    chan *command.Command
+	moveCh   chan actorMove
 
 	doneCh <-chan struct{}
 }
@@ -33,10 +33,10 @@ type Area struct {
 // Creates a new instance of the area
 func New(doneCh <-chan struct{}) *Area {
 	return &Area{
-		addLocCh:    make(chan location.Interface, 1),
-		cmdCh:       make(chan *command.Command, 10),
-		moveActorCh: make(chan actorMove, 10),
-		doneCh:      doneCh,
+		addLocCh: make(chan location.Interface, 1),
+		cmdCh:    make(chan *command.Command, 10),
+		moveCh:   make(chan actorMove, 10),
+		doneCh:   doneCh,
 	}
 }
 
@@ -51,29 +51,60 @@ func (a *Area) Run() {
 		select {
 		case loc := <-a.addLocCh:
 			a.locs = append(a.locs, loc)
+			loc.SetLocator(a)
 		case cmd := <-a.cmdCh:
 			if actor, ok := cmd.Issuer.(actor.Interface); ok && actor.Locate() != nil {
 				actor.Locate().Process(cmd)
 			}
-		case actorMove := <-a.moveActorCh:
-			actorMove.actor.Relocate(actorMove.toLoc)
-			actorMove.toLoc.Add(actorMove.actor)
+		case move := <-a.moveCh:
+			move.actor.Relocate(move.toLoc)
+			move.toLoc.Add(move.actor)
 
-			fmt.Println("actorMove", actorMove.toLoc.Name(), actorMove.actor.Name(), actorMove.start)
+			fmt.Println("DEBUG: move", move.actor.Name(), "to", move.toLoc.Name(), move.spawn)
 
-			if actorMove.start {
-				actorMove.toLoc.Broadcast([]thing.Interface{actorMove.actor}, "Out of thin air %s appears in a puff of smoke looking dazed and confused.", actorMove.actor)
-				messaging.Respond(actorMove.actor, "You look around dazed as a swirl of smoke fades around you.")
+			if move.spawn {
+				move.toLoc.Broadcast([]thing.Interface{move.actor}, "Out of thin air %s appears in a puff of smoke looking dazed and confused.", move.actor)
+				messaging.Respond(move.actor, "You look around dazed as a swirl of smoke fades around you.")
 			} else {
-				actorMove.toLoc.Broadcast([]thing.Interface{actorMove.actor}, "%s enters", actorMove.actor)
+				move.toLoc.Broadcast([]thing.Interface{move.actor}, "%s enters", move.actor)
 			}
 
-			actorMove.toLoc.Process(command.New(actorMove.actor, "look"))
+			move.toLoc.Process(command.New(move.actor, "look"))
 		case _, ok := <-a.doneCh:
 			if !ok {
 				return
 			}
 		}
+	}
+}
+
+// Moves an actor from one location to another using exits
+// Implements the locator Move interface
+func (a *Area) Move(t thing.Interface, loc location.Interface) {
+	actor, ok := t.(actor.Interface)
+	if !ok {
+		return
+	}
+
+	a.moveCh <- actorMove{
+		actor: actor,
+		toLoc: loc,
+		spawn: false,
+	}
+}
+
+// Inserts an actor into a location
+// implements the locator spawn interface
+func (a *Area) Spawn(t thing.Interface, loc location.Interface) {
+	actor, ok := t.(actor.Interface)
+	if !ok {
+		return
+	}
+
+	a.moveCh <- actorMove{
+		actor: actor,
+		toLoc: loc,
+		spawn: true,
 	}
 }
 
@@ -85,14 +116,4 @@ func (a *Area) AddLoc(loc location.Interface) {
 // Sends a command to the area
 func (a *Area) Command(cmd *command.Command) {
 	a.cmdCh <- cmd
-}
-
-// Moves the actor from their current location into a new location.
-// TODO should this move the actor from the origin?
-func (a *Area) MoveActor(actor actor.Interface, loc location.Interface, start bool) {
-	a.moveActorCh <- actorMove{
-		actor: actor,
-		toLoc: loc,
-		start: start,
-	}
 }
