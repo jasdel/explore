@@ -11,10 +11,10 @@ import (
 
 func main() {
 	doneCh := make(chan struct{})
-	a := area.New(doneCh)
+	a := area.New("city", doneCh)
 	go a.Run()
 
-	a2 := area.New(doneCh)
+	a2 := area.New("market", doneCh)
 	go a2.Run()
 
 	start := location.New(thing.New(<-uid.Next, "City Center", "Central location with in the city", []string{}), location.Exits{})

@@ -5,6 +5,7 @@ import (
 	"jasdel/explore/util/command"
 	"jasdel/explore/util/inventory"
 	"jasdel/explore/util/messaging"
+	"sync"
 )
 
 // Directional exit that is tied to an location
@@ -18,18 +19,26 @@ type Exit struct {
 
 // Processes the command determining if this exit is where the thing is going through
 // Expects to be called in the same context as a location
+//
+// TODO need to refactor how locatables are moved between locations. This method
+// 'works', but may not be safe.
+//
 func (e *Exit) Process(cmd *command.Command) bool {
 	for _, alias := range e.Aliases {
 		if cmd.Verb == alias {
-			if locateable, ok := cmd.Issuer.(Locateable); ok {
-				loc := locateable.Locate()
-				loc.Broadcast([]thing.Interface{cmd.Issuer}, "%s %s", cmd.Issuer.Name(), e.ExitMsg)
+			locateable, ok := cmd.Issuer.(Locateable)
+			if !ok {
+				return false
+			}
 
+			if loc := locateable.Locate(); loc != nil {
+				loc.Broadcast([]thing.Interface{cmd.Issuer}, "%s %s", cmd.Issuer.Name(), e.ExitMsg)
 				loc.Remove(cmd.Issuer)
 				locateable.Relocate(nil)
-				loc.Locator().Move(cmd.Issuer, e.To)
-				return true
 			}
+
+			e.To.Locator().Move(cmd.Issuer, e.To)
+			return true
 		}
 	}
 	return false
@@ -87,6 +96,8 @@ type Location struct {
 	inventory.Inventory
 	exits   Exits
 	locator Locator
+
+	locatorMtx sync.Mutex
 }
 
 // Creates a new area
@@ -106,11 +117,18 @@ func (l *Location) Exits() Exits {
 
 // Returns the locator for this location
 func (l *Location) Locator() Locator {
-	return l.locator
+	l.locatorMtx.Lock()
+	defer l.locatorMtx.Unlock()
+
+	locator := l.locator
+	return locator
 }
 
 // Switches to a new locator
 func (l *Location) SetLocator(locator Locator) {
+	l.locatorMtx.Lock()
+	defer l.locatorMtx.Unlock()
+
 	l.locator = locator
 }
 

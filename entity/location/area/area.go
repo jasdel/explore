@@ -20,6 +20,7 @@ type actorMove struct {
 // any thing within any location within.  Including items
 // actors, and locations
 type Area struct {
+	name   string
 	actors []actor.Interface
 	locs   []location.Interface
 
@@ -31,8 +32,9 @@ type Area struct {
 }
 
 // Creates a new instance of the area
-func New(doneCh <-chan struct{}) *Area {
+func New(name string, doneCh <-chan struct{}) *Area {
 	return &Area{
+		name:     name,
 		addLocCh: make(chan location.Interface, 1),
 		cmdCh:    make(chan *command.Command, 10),
 		moveCh:   make(chan actorMove, 10),
@@ -45,6 +47,7 @@ func New(doneCh <-chan struct{}) *Area {
 // TODO does not check if location already added on add
 // TODO do more than just send command to the location, verify ownership of location
 // TODO need to check to make sure this area controls the location
+// TODO does not support moving locations
 //
 func (a *Area) Run() {
 	for {
@@ -53,14 +56,16 @@ func (a *Area) Run() {
 			a.locs = append(a.locs, loc)
 			loc.SetLocator(a)
 		case cmd := <-a.cmdCh:
-			if actor, ok := cmd.Issuer.(actor.Interface); ok && actor.Locate() != nil {
-				actor.Locate().Process(cmd)
+			if actor, ok := cmd.Issuer.(actor.Interface); ok {
+				if loc := actor.Locate(); loc != nil {
+					loc.Process(cmd)
+				}
 			}
 		case move := <-a.moveCh:
 			move.actor.Relocate(move.toLoc)
 			move.toLoc.Add(move.actor)
 
-			fmt.Println("DEBUG: move", move.actor.Name(), "to", move.toLoc.Name(), move.spawn)
+			fmt.Println("DEBUG: area:", a.name, " move", move.actor.Name(), "to", move.toLoc.Name(), move.spawn)
 
 			if move.spawn {
 				move.toLoc.Broadcast([]thing.Interface{move.actor}, "Out of thin air %s appears in a puff of smoke looking dazed and confused.", move.actor)
