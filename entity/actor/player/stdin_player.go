@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"jasdel/explore/util/command"
 	"os"
+	"strings"
+	"time"
 )
 
 type StdInPlayer struct {
@@ -13,10 +15,16 @@ type StdInPlayer struct {
 
 func (p *StdInPlayer) ReadStdIn() {
 	s := bufio.NewScanner(os.Stdin)
+
+	t := time.NewTicker(time.Millisecond * 100)
+	defer t.Stop()
+
 	for s.Scan() {
-		if l := p.Locate(); l != nil {
-			l.Command(command.New(p, s.Text()))
+		cmd := strings.TrimSpace(s.Text())
+		if l := p.Locate(); l != nil && cmd != "" {
+			l.Command(command.New(p, cmd))
 		}
+		// <-t.C
 	}
 }
 

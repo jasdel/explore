@@ -7,16 +7,17 @@ import (
 	"jasdel/explore/util/inventory"
 	"jasdel/explore/util/messaging"
 	"jasdel/explore/util/uid"
+	"sync"
 )
 
-// Locateable defines the interface for something that has a location or can be
+// Locatable defines the interface for something that has a location or can be
 // moved from or to a location. For example a mobile.
-type Locateable interface {
-	// Relocates a Locateable to a new location,
+type Locatable interface {
+	// Relocates a Locatable to a new location,
 	// returning the original location
 	Relocate(Interface) Interface
 
-	// Locate gets a Locateable's current location
+	// Locate gets a Locatable's current location
 	Locate() Interface
 }
 
@@ -27,11 +28,11 @@ type Interface interface {
 	command.Processor
 	messaging.Broadcaster
 
-	// Exits() Exits
-	// LinkExit(e Exit)
+	Exits() Exits
+	LinkExit(e Exit)
 
 	// A Thing is moving into this location
-	MoveTo(thing thing.Interface, enterMsg string)
+	MoveIn(thing thing.Interface, from Interface, enterMsg string)
 	Command(*command.Command)
 }
 
@@ -41,21 +42,26 @@ type Location struct {
 	inventory.Inventory
 	exits Exits
 
-	moveCh chan thingMove
+	moveCh chan ThingMove
 	cmdCh  chan *command.Command
+
+	linkMtx sync.Mutex
 }
 
 // Creates a new area
-func New(id uid.UID, name, desc string) *Location {
+func New(id uid.UID, name, desc string, cmdCh chan *command.Command, moveCh chan ThingMove) *Location {
 	return &Location{
 		Thing:  thing.New(id, name, desc, []string{}),
-		moveCh: make(chan thingMove, 10),
-		cmdCh:  make(chan *command.Command, 10),
+		moveCh: moveCh,
+		cmdCh:  cmdCh,
 	}
 }
 
 // Returns the list of exists
 func (l *Location) Exits() Exits {
+	l.linkMtx.Lock()
+	defer l.linkMtx.Unlock()
+
 	e := make(Exits, len(l.exits))
 	copy(e, l.exits)
 	return e
@@ -64,7 +70,11 @@ func (l *Location) Exits() Exits {
 // Adds a new exit to the location
 //
 // TODO de-dupe exits
+//
 func (l *Location) LinkExit(e Exit) {
+	l.linkMtx.Lock()
+	defer l.linkMtx.Unlock()
+
 	l.exits = append(l.exits, e)
 }
 
@@ -78,37 +88,43 @@ func (l *Location) Broadcast(omit []thing.Interface, format string, any ...inter
 	}
 }
 
-type thingMove struct {
-	thing    thing.Interface
-	enterMsg string
-	spawn    bool
+type ThingMove struct {
+	Thing    thing.Interface
+	ToLoc    Interface
+	EnterMsg string
+	Spawn    bool
 }
 
-// Adds a thing to be moved away from this location to another
-func (l *Location) MoveTo(t thing.Interface, enterMsg string) {
-	if _, ok := t.(Locateable); !ok {
-		fmt.Println("Location.Move: DEBUG:", l.Name(), "Thing", t.Name(), t.UniqueId(), "is not a Locatable")
+// Moves a thing from this location from another
+func (l *Location) MoveIn(t thing.Interface, from Interface, enterMsg string) {
+	if _, ok := t.(Locatable); !ok {
+		fmt.Println("Location.Move: DEBUG:", l.Name(), l.UniqueId(), "thing", t.Name(), t.UniqueId(), "is not locatable")
 		return
 	}
 
-	l.moveCh <- thingMove{
-		thing:    t,
-		enterMsg: enterMsg,
+	l.moveCh <- ThingMove{
+		Thing:    t,
+		ToLoc:    l,
+		EnterMsg: enterMsg,
 	}
 }
 
 // Spawns the thing into the
 func (l *Location) Spawn(t thing.Interface) {
-	if _, ok := t.(Locateable); !ok {
-		fmt.Println("Location.Spawn: DEBUG:", l.Name(), "Thing", t.Name(), t.UniqueId(), "is not a Locatable")
+	locatable, ok := t.(Locatable)
+	if !ok {
+		fmt.Println("Location.Spawn: DEBUG:", l.Name(), l.UniqueId(), "thing", t.Name(), t.UniqueId(), "is not locatable")
 		return
 	}
 
+	locatable.Relocate(l)
+
 	messaging.Respond(t, "You look around dazed as a swirl of smoke fades around you.")
-	l.moveCh <- thingMove{
-		thing:    t,
-		enterMsg: fmt.Sprintf("%s appears in a puff of smoke looking dazed and confused.", t.Name()),
-		spawn:    true,
+	l.moveCh <- ThingMove{
+		Thing:    t,
+		ToLoc:    l,
+		EnterMsg: fmt.Sprintf("%s appears in a puff of smoke looking dazed and confused.", t.Name()),
+		Spawn:    true,
 	}
 }
 
@@ -117,34 +133,10 @@ func (l *Location) Command(cmd *command.Command) {
 	l.cmdCh <- cmd
 }
 
-// Runs the location
-func (l *Location) Run(doneCh chan struct{}) {
-	for {
-		select {
-		case cmd := <-l.cmdCh:
-			fmt.Println("Location.Run: DEBUG:", l.Name(), "command received from", cmd.Issuer.Name(), cmd.Issuer.UniqueId(), cmd.Statement)
-			l.Process(cmd)
-
-		case move := <-l.moveCh:
-			l.Add(move.thing)
-			l.Broadcast([]thing.Interface{move.thing}, move.enterMsg)
-			locatable := move.thing.(Locateable)
-			locatable.Relocate(l)
-			l.Process(command.New(move.thing, "look"))
-
-		case _, ok := <-doneCh:
-			if !ok {
-				return
-			}
-		}
-	}
-}
-
 // Processes the command within the scope of the area
 func (l *Location) Process(cmd *command.Command) bool {
-	// Give exits first chance to run so actors can
-	// leave the area
-	for _, e := range l.exits {
+	// Give exits first chance to run so actors can leave the area
+	for _, e := range l.Exits() {
 		if e.Process(cmd) {
 			return true
 		}
@@ -158,7 +150,12 @@ func (l *Location) Process(cmd *command.Command) bool {
 	// The following commands can only be processed relative to the
 	// issuer's location. So we need to check if this location is
 	// where the issuer is.
-	if loc, ok := cmd.Issuer.(Locateable); ok {
+	//
+	// TODO is this actually needed? explore's model requires issuer
+	// to be in same location, and command, might be useful for
+	// error checking.
+	//
+	if loc, ok := cmd.Issuer.(Locatable); ok {
 		if !loc.Locate().IsAlso(l) {
 			return false
 		}
@@ -175,14 +172,14 @@ func (l *Location) Process(cmd *command.Command) bool {
 
 // Responds with the location's description and known visible exits
 func (l *Location) look(cmd *command.Command) bool {
-	inv := thing.StringList(l.List(cmd.Issuer))
+	inv := thing.SliceToString(l.List(cmd.Issuer))
 
-	cmd.Respond("You see: %s\n\nObvious exits: %s\n\n%s", l.Desc(), l.exits.String(), inv)
+	cmd.Respond("You see: %s\n\nObvious exits: %s\n\n%s", l.Desc(), l.Exits().String(), inv)
 	return true
 }
 
 // lists all known exists
 func (l *Location) listExists(cmd *command.Command) bool {
-	cmd.Respond("Visible exits:\n%s", l.exits.String())
+	cmd.Respond("Visible exits:\n%s", l.Exits().String())
 	return true
 }

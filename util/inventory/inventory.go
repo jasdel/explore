@@ -3,6 +3,7 @@ package inventory
 import (
 	"jasdel/explore/entity/thing"
 	"jasdel/explore/util/command"
+	"sync"
 )
 
 const (
@@ -18,6 +19,8 @@ type Interface interface {
 
 type Inventory struct {
 	things []thing.Interface
+
+	mutex sync.RWMutex
 }
 
 func New(initialCap int) *Inventory {
@@ -111,5 +114,3 @@ func find(t thing.Interface, things []thing.Interface) int {
 	}
 	return notFound
 }
-
-// .

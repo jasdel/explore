@@ -11,6 +11,7 @@ type Interface interface {
 	Desc() string
 	Aliases() []string
 	IsAlias(string) bool
+	SelfOmit() []Interface
 }
 
 type Thing struct {
@@ -18,6 +19,8 @@ type Thing struct {
 	name    string
 	desc    string
 	aliases []string
+
+	selfOmit []Interface
 }
 
 func NewNoAliases(id uid.UID, name, desc string) *Thing {
@@ -26,12 +29,15 @@ func NewNoAliases(id uid.UID, name, desc string) *Thing {
 
 // Returns a new Thing from the values provided
 func New(id uid.UID, name, desc string, aliases []string) *Thing {
-	return &Thing{
+	t := &Thing{
 		UID:     id,
 		name:    name,
 		desc:    desc,
 		aliases: aliases,
 	}
+	t.selfOmit = []Interface{t}
+
+	return t
 }
 
 // Return the thing's name
@@ -64,8 +70,14 @@ func (t *Thing) IsAlias(alias string) bool {
 	return false
 }
 
+// Returns a pre-build omit interface list so
+// one doesn't need to be created for broadcasts
+func (t *Thing) SelfOmit() []Interface {
+	return t.selfOmit
+}
+
 // Utility method to convert list of things to string
-func StringList(things []Interface) string {
+func SliceToString(things []Interface) string {
 	var output string
 	for _, t := range things {
 		output += t.Name() + "\n"

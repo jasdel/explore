@@ -1,6 +1,7 @@
 package actor
 
 import (
+	"fmt"
 	"jasdel/explore/entity/location"
 	"jasdel/explore/entity/thing"
 	"jasdel/explore/util/command"
@@ -13,7 +14,7 @@ import (
 type Interface interface {
 	thing.Interface
 	inventory.Interface
-	location.Locateable
+	location.Locatable
 	messaging.Broadcaster
 }
 
@@ -55,12 +56,33 @@ func (a *Actor) Relocate(loc location.Interface) location.Interface {
 
 // Processes the actors specific commands
 func (a *Actor) Process(cmd *command.Command) bool {
-	return false
+	switch cmd.Verb {
+	case "inventory", "inv", "i":
+		inv := thing.SliceToString(a.List(cmd.Issuer))
+		cmd.Respond(inv)
+	case "say":
+		a.Broadcast(a.SelfOmit(), "%s", a.Name())
+	case "tell", "whisper":
+		// TODO handle cross thing communication.
+		// start with location first, region, then branch out to world
+	default:
+		// Give the inventory a chance to process the command
+		if a.Inventory.Process(cmd) {
+			return true
+		}
+
+		// No match, so this command is not handled by the actor
+		return false
+	}
+
+	return true
 }
 
 // Broadcasts the message to the location, if the actor is in that location.
 func (a *Actor) Broadcast(omit []thing.Interface, format string, any ...interface{}) {
 	if a.atLoc != nil {
 		a.atLoc.Broadcast(omit, format, any...)
+	} else {
+		fmt.Println("Actor.Broadcast: DEBUG:", a.Name(), "tried to broadcast, but is not at a location")
 	}
 }

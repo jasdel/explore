@@ -2,7 +2,6 @@ package location
 
 import (
 	"fmt"
-	"jasdel/explore/entity/thing"
 	"jasdel/explore/util/command"
 	"strings"
 )
@@ -31,17 +30,21 @@ type Exit struct {
 func (e *Exit) Process(cmd *command.Command) bool {
 	for _, alias := range e.Aliases {
 		if cmd.Verb == alias {
-			locateable, ok := cmd.Issuer.(Locateable)
+			locatable, ok := cmd.Issuer.(Locatable)
 			if !ok {
 				return false
 			}
 
-			if loc := locateable.Relocate(nil); loc != nil {
-				loc.Broadcast([]thing.Interface{cmd.Issuer}, e.ExitMsg, cmd.Issuer.Name(), e.Name)
-				loc.Remove(cmd.Issuer)
-			}
+			fmt.Println("Exit.Process: DEBUG:", e.Name, "exit by", cmd.Issuer.Name(), cmd.Issuer.UniqueId())
 
-			e.Loc.MoveTo(cmd.Issuer, fmt.Sprintf(e.EnterMsg, cmd.Issuer.Name(), e.Name))
+			origLoc := locatable.Relocate(e.Loc)
+			if origLoc != nil {
+				origLoc.Broadcast(cmd.Issuer.SelfOmit(), e.ExitMsg, cmd.Issuer.Name(), e.Name)
+				origLoc.Remove(cmd.Issuer)
+			}
+			fmt.Println("Exit.Process: DEBUG:", e.Name, "relocated", cmd.Issuer.Name(), cmd.Issuer.UniqueId(), origLoc.Name(), origLoc.UniqueId())
+
+			e.Loc.MoveIn(cmd.Issuer, origLoc, fmt.Sprintf(e.EnterMsg, cmd.Issuer.Name(), e.Name))
 			return true
 		}
 	}
@@ -52,7 +55,8 @@ type Exits []Exit
 
 // Prints the known exits to strings
 func (e Exits) String() string {
-	var buf []string
+	buf := make([]string, 0, len(e))
+
 	for _, exit := range e {
 		buf = append(buf, exit.Name)
 	}

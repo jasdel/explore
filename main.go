@@ -1,18 +1,39 @@
 package main
 
 import (
+	// "github.com/davecheney/profile"
 	"jasdel/explore/entity/actor"
 	"jasdel/explore/entity/actor/player"
 	"jasdel/explore/entity/location"
+	"jasdel/explore/entity/location/region"
+	"jasdel/explore/entity/thing"
 	"jasdel/explore/util/uid"
 )
 
+//
+// TODO add signal handling for os.Interrupt, os.Kill
+// TODO clean shutdown, right now done ch just kills
+// oll the goroutines, need to wait for them to empty
+// and shutdown command processing.
+//
 func main() {
+	// defer profile.Start(profile.CPUProfile).Stop()
+
 	doneCh := make(chan struct{})
 
-	start := location.New(<-uid.Next, "City Center", "Central location with in the city")
-	south := location.New(<-uid.Next, "Southern plains", "Southern plains ")
-	east := location.New(<-uid.Next, "Market District", "Busy street full of merchants selling their goods.")
+	r1 := region.New("r1")
+	go r1.Run(doneCh)
+	r2 := region.New("r2")
+	go r2.Run(doneCh)
+
+	start := location.New(<-uid.Next, "City Center", "Central location with in the city", r1.CmdCh, r1.MoveCh)
+	r1.AddLoc(start)
+
+	south := location.New(<-uid.Next, "Southern plains", "Plains as far as the eyes can see.", r2.CmdCh, r2.MoveCh)
+	r2.AddLoc(south)
+
+	east := location.New(<-uid.Next, "Market District", "Busy street full of merchants selling their goods.", r1.CmdCh, r1.MoveCh)
+	r1.AddLoc(east)
 
 	start.LinkExit(location.Exit{Name: "south", Aliases: []string{"south", "s"}, Loc: south,
 		ExitMsg: location.DirectionalExitMsgFmt, EnterMsg: location.DirectionalEnterMsgFmt,
@@ -27,14 +48,12 @@ func main() {
 		ExitMsg: location.DirectionalExitMsgFmt, EnterMsg: location.DirectionalEnterMsgFmt,
 	})
 
-	go start.Run(doneCh)
-	go south.Run(doneCh)
-	go east.Run(doneCh)
-
 	p := player.StdInPlayer{Player: player.New(<-uid.Next, "You", "its you silly")}
-	start.Spawn(p)
+	p.Add(thing.New(<-uid.Next, "Spoon", "a old four foot long wooden spoon", []string{"actor"}))
 
 	act := actor.New(<-uid.Next, "Place Holder Actor", "Place holder actor", []string{"actor"})
+
+	start.Spawn(p)
 	start.Spawn(act)
 
 	go p.ReadStdIn()
