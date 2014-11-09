@@ -6,6 +6,7 @@ import (
 	"jasdel/explore/util/command"
 	"jasdel/explore/util/inventory"
 	"jasdel/explore/util/messaging"
+	"jasdel/explore/util/uid"
 	"sync"
 )
 
@@ -25,10 +26,9 @@ type Actor struct {
 }
 
 // Create a new actor
-func New(t *thing.Thing, atLoc location.Interface) *Actor {
+func New(id uid.UID, name, desc string, aliases []string) *Actor {
 	return &Actor{
-		Thing: t,
-		atLoc: atLoc,
+		Thing: thing.New(id, name, desc, aliases),
 	}
 }
 
@@ -43,11 +43,14 @@ func (a *Actor) Locate() location.Interface {
 }
 
 // Updates the location of the actor
-func (a *Actor) Relocate(loc location.Interface) {
+func (a *Actor) Relocate(loc location.Interface) location.Interface {
 	a.locateMtx.Lock()
 	defer a.locateMtx.Unlock()
 
+	origLoc := a.atLoc
 	a.atLoc = loc
+
+	return origLoc
 }
 
 // Processes the actors specific commands

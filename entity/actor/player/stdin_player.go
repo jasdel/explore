@@ -15,7 +15,7 @@ func (p *StdInPlayer) ReadStdIn() {
 	s := bufio.NewScanner(os.Stdin)
 	for s.Scan() {
 		if l := p.Locate(); l != nil {
-			l.Locator().Command(command.New(p, s.Text()))
+			l.Command(command.New(p, s.Text()))
 		}
 	}
 }

@@ -20,6 +20,10 @@ type Thing struct {
 	aliases []string
 }
 
+func NewNoAliases(id uid.UID, name, desc string) *Thing {
+	return New(id, name, desc, []string{})
+}
+
 // Returns a new Thing from the values provided
 func New(id uid.UID, name, desc string, aliases []string) *Thing {
 	return &Thing{

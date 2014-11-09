@@ -2,8 +2,7 @@ package player
 
 import (
 	"jasdel/explore/entity/actor"
-	"jasdel/explore/entity/location"
-	"jasdel/explore/entity/thing"
+	"jasdel/explore/util/uid"
 )
 
 type Interface interface {
@@ -15,8 +14,8 @@ type Player struct {
 }
 
 // Creates a new player instance
-func New(t *thing.Thing, atLoc location.Interface) *Player {
+func New(id uid.UID, name, desc string) *Player {
 	return &Player{
-		Actor: actor.New(t, atLoc),
+		Actor: actor.New(id, name, desc, []string{}),
 	}
 }

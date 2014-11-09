@@ -4,39 +4,40 @@ import (
 	"jasdel/explore/entity/actor"
 	"jasdel/explore/entity/actor/player"
 	"jasdel/explore/entity/location"
-	"jasdel/explore/entity/location/area"
-	"jasdel/explore/entity/thing"
 	"jasdel/explore/util/uid"
 )
 
 func main() {
 	doneCh := make(chan struct{})
-	a := area.New("city", doneCh)
-	go a.Run()
 
-	a2 := area.New("market", doneCh)
-	go a2.Run()
+	start := location.New(<-uid.Next, "City Center", "Central location with in the city")
+	south := location.New(<-uid.Next, "Southern plains", "Southern plains ")
+	east := location.New(<-uid.Next, "Market District", "Busy street full of merchants selling their goods.")
 
-	start := location.New(thing.New(<-uid.Next, "City Center", "Central location with in the city", []string{}), location.Exits{})
-	south := location.New(thing.New(<-uid.Next, "Southern plains", "Southern plains ", []string{}), location.Exits{})
-	east := location.New(thing.New(<-uid.Next, "Market District", "Busy street full of merchants selling their goods.", []string{}), location.Exits{})
+	start.LinkExit(location.Exit{Name: "south", Aliases: []string{"south", "s"}, Loc: south,
+		ExitMsg: location.DirectionalExitMsgFmt, EnterMsg: location.DirectionalEnterMsgFmt,
+	})
+	south.LinkExit(location.Exit{Name: "north", Aliases: []string{"north", "n"}, Loc: start,
+		ExitMsg: location.DirectionalExitMsgFmt, EnterMsg: location.DirectionalEnterMsgFmt,
+	})
+	start.LinkExit(location.Exit{Name: "east", Aliases: []string{"east", "e"}, Loc: east,
+		ExitMsg: location.DirectionalExitMsgFmt, EnterMsg: location.DirectionalEnterMsgFmt,
+	})
+	east.LinkExit(location.Exit{Name: "west", Aliases: []string{"west", "w"}, Loc: start,
+		ExitMsg: location.DirectionalExitMsgFmt, EnterMsg: location.DirectionalEnterMsgFmt,
+	})
 
-	start.LinkExit(location.Exit{Name: "south", Aliases: []string{"south", "s"}, To: south})
-	south.LinkExit(location.Exit{Name: "north", Aliases: []string{"north", "n"}, To: start})
+	go start.Run(doneCh)
+	go south.Run(doneCh)
+	go east.Run(doneCh)
 
-	start.LinkExit(location.Exit{Name: "east", Aliases: []string{"east", "e"}, To: east})
-	east.LinkExit(location.Exit{Name: "west", Aliases: []string{"west", "w"}, To: start})
+	p := player.StdInPlayer{Player: player.New(<-uid.Next, "You", "its you silly")}
+	start.Spawn(p)
 
-	a.AddLoc(start)
-	a.AddLoc(south)
-	a2.AddLoc(east)
+	act := actor.New(<-uid.Next, "Place Holder Actor", "Place holder actor", []string{"actor"})
+	start.Spawn(act)
 
-	act := actor.New(thing.New(<-uid.Next, "Place Holder Actor", "Place holder actor", []string{"act"}), nil)
-	a.Spawn(act, start)
-
-	p := player.StdInPlayer{Player: player.New(thing.New(<-uid.Next, "You", "its you silly", []string{}), nil)}
 	go p.ReadStdIn()
-	a.Spawn(p, start)
 
 	<-doneCh
 }
