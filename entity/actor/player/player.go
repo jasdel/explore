@@ -1,8 +1,8 @@
 package player
 
 import (
-	"jasdel/explore/entity/actor"
-	"jasdel/explore/util/uid"
+	"github.com/jasdel/explore/entity/actor"
+	"github.com/jasdel/explore/util/uid"
 )
 
 type Interface interface {

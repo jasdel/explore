@@ -3,7 +3,7 @@ package player
 import (
 	"bufio"
 	"fmt"
-	"jasdel/explore/util/command"
+	"github.com/jasdel/explore/util/command"
 	"os"
 	"strings"
 	"time"

@@ -2,8 +2,8 @@ package region
 
 import (
 	"fmt"
-	"jasdel/explore/entity/location"
-	"jasdel/explore/util/command"
+	"github.com/jasdel/explore/entity/location"
+	"github.com/jasdel/explore/util/command"
 	"sync"
 )
 

@@ -5,7 +5,7 @@ package messaging
 
 import (
 	"fmt"
-	"jasdel/explore/entity/thing"
+	"github.com/jasdel/explore/entity/thing"
 )
 
 // Respond should be implemented by anything that wants to 'respond' to players.

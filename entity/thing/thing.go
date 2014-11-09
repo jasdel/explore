@@ -1,7 +1,7 @@
 package thing
 
 import (
-	"jasdel/explore/util/uid"
+	"github.com/jasdel/explore/util/uid"
 	"strings"
 )
 

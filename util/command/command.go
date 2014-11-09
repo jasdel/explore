@@ -1,8 +1,8 @@
 package command
 
 import (
-	"jasdel/explore/entity/thing"
-	"jasdel/explore/util/messaging"
+	"github.com/jasdel/explore/entity/thing"
+	"github.com/jasdel/explore/util/messaging"
 	"strings"
 )
 

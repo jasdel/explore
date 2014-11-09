@@ -1,8 +1,8 @@
 package inventory
 
 import (
-	"jasdel/explore/entity/thing"
-	"jasdel/explore/util/command"
+	"github.com/jasdel/explore/entity/thing"
+	"github.com/jasdel/explore/util/command"
 	"sync"
 )
 

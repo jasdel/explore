@@ -2,7 +2,7 @@ package location
 
 import (
 	"fmt"
-	"jasdel/explore/util/command"
+	"github.com/jasdel/explore/util/command"
 	"strings"
 )
 

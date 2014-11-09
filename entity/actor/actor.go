@@ -2,12 +2,12 @@ package actor
 
 import (
 	"fmt"
-	"jasdel/explore/entity/location"
-	"jasdel/explore/entity/thing"
-	"jasdel/explore/util/command"
-	"jasdel/explore/util/inventory"
-	"jasdel/explore/util/messaging"
-	"jasdel/explore/util/uid"
+	"github.com/jasdel/explore/entity/location"
+	"github.com/jasdel/explore/entity/thing"
+	"github.com/jasdel/explore/util/command"
+	"github.com/jasdel/explore/util/inventory"
+	"github.com/jasdel/explore/util/messaging"
+	"github.com/jasdel/explore/util/uid"
 	"sync"
 )
 

@@ -1,8 +1,8 @@
 package entity
 
 import (
-	"jasdel/explore/entity/actor/player"
-	"jasdel/explore/entity/location"
+	"github.com/jasdel/explore/entity/actor/player"
+	"github.com/jasdel/explore/entity/location"
 )
 
 type World struct {

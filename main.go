@@ -2,12 +2,12 @@ package main
 
 import (
 	// "github.com/davecheney/profile"
-	"jasdel/explore/entity/actor"
-	"jasdel/explore/entity/actor/player"
-	"jasdel/explore/entity/location"
-	"jasdel/explore/entity/location/region"
-	"jasdel/explore/entity/thing"
-	"jasdel/explore/util/uid"
+	"github.com/jasdel/explore/entity/actor"
+	"github.com/jasdel/explore/entity/actor/player"
+	"github.com/jasdel/explore/entity/location"
+	"github.com/jasdel/explore/entity/location/region"
+	"github.com/jasdel/explore/entity/thing"
+	"github.com/jasdel/explore/util/uid"
 )
 
 //
