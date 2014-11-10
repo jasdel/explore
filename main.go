@@ -48,7 +48,7 @@ func main() {
 		ExitMsg: location.DirectionalExitMsgFmt, EnterMsg: location.DirectionalEnterMsgFmt,
 	})
 
-	p := player.StdInPlayer{Player: player.New(<-uid.Next, "You", "its you silly")}
+	p := &player.StdInPlayer{Player: player.New(<-uid.Next, "You", "its you silly")}
 	p.Add(thing.New(<-uid.Next, "Spoon", "a old four foot long wooden spoon", []string{"actor"}))
 
 	act := actor.New(<-uid.Next, "Place Holder Actor", "Place holder actor", []string{"actor"})

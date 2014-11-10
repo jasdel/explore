@@ -30,6 +30,6 @@ func (p *StdInPlayer) ReadStdIn() {
 
 // Implements the messaging.Responder interface for sending messages
 // back to this player
-func (p StdInPlayer) Respond(format string, any ...interface{}) {
+func (p *StdInPlayer) Respond(format string, any ...interface{}) {
 	fmt.Printf(format+"\n", any...)
 }

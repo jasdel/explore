@@ -22,7 +22,7 @@ func Respond(t thing.Interface, format string, any ...interface{}) {
 	if responder, ok := t.(Responder); ok {
 		responder.Respond(format, any...)
 	} else {
-		fmt.Println("messaging.Respond: DEBUG:", t.Name(), t.UniqueId(), "is not a Responder.")
+		fmt.Printf("messaging.Respond: DEBUG: %s %d, is not a Responder. %#v\n", t.Name(), t.UniqueId(), t)
 	}
 }
 
