@@ -2,6 +2,7 @@ package location
 
 import (
 	"fmt"
+	"github.com/jasdel/explore/entity/thing"
 	"github.com/jasdel/explore/util/command"
 	"strings"
 )
@@ -28,27 +29,38 @@ type Exit struct {
 // 'works', but may not be safe.
 //
 func (e *Exit) Process(cmd *command.Command) bool {
+
+	if e.Name == cmd.Verb {
+		e.exit(cmd.Issuer)
+		return true
+	}
+
 	for _, alias := range e.Aliases {
 		if cmd.Verb == alias {
-			locatable, ok := cmd.Issuer.(Locatable)
-			if !ok {
-				return false
-			}
-
-			fmt.Println("Exit.Process: DEBUG:", e.Name, "exit by", cmd.Issuer.Name(), cmd.Issuer.UniqueId())
-
-			origLoc := locatable.Relocate(e.Loc)
-			if origLoc != nil {
-				origLoc.Broadcast(cmd.Issuer.SelfOmit(), e.ExitMsg, cmd.Issuer.Name(), e.Name)
-				origLoc.Remove(cmd.Issuer)
-			}
-			fmt.Println("Exit.Process: DEBUG:", e.Name, "relocated", cmd.Issuer.Name(), cmd.Issuer.UniqueId(), origLoc.Name(), origLoc.UniqueId())
-
-			e.Loc.MoveIn(cmd.Issuer, origLoc, fmt.Sprintf(e.EnterMsg, cmd.Issuer.Name(), e.Name))
+			e.exit(cmd.Issuer)
 			return true
 		}
 	}
+
 	return false
+}
+
+// Moves the thing out of its current location and into a new location.
+func (e *Exit) exit(t thing.Interface) {
+	locatable, ok := t.(Locatable)
+	if !ok {
+		fmt.Printf("Exit.exit: DEBUG: %s is not a locatable. %#v\n", e.Name, t)
+		return
+	}
+
+	origLoc := locatable.Relocate(e.Loc)
+	if origLoc != nil {
+		origLoc.Broadcast(t.SelfOmit(), e.ExitMsg, t.Name(), e.Name)
+		origLoc.Remove(t)
+	}
+	fmt.Println("Exit.Process: DEBUG:", e.Name, "relocated", t.Name(), t.UniqueId(), origLoc.Name(), origLoc.UniqueId())
+
+	e.Loc.MoveIn(t, origLoc, fmt.Sprintf(e.EnterMsg, t.Name(), e.Name))
 }
 
 type Exits []Exit
