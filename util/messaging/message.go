@@ -1,4 +1,4 @@
-// Structure and comments copied from Andrew 'Diddymus' Rolfe WolfMUD (2012)
+// Structure and comments originally copied from Andrew 'Diddymus' Rolfe WolfMUD (2012)
 
 // Definition of the messaging interface
 package messaging

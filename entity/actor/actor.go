@@ -8,6 +8,7 @@ import (
 	"github.com/jasdel/explore/util/inventory"
 	"github.com/jasdel/explore/util/messaging"
 	"github.com/jasdel/explore/util/uid"
+	"strings"
 	"sync"
 )
 
@@ -61,7 +62,10 @@ func (a *Actor) Process(cmd *command.Command) bool {
 		inv := thing.SliceToString(a.List(cmd.Issuer))
 		cmd.Respond(inv)
 	case "say":
-		a.Broadcast(a.SelfOmit(), "%s", a.Name())
+		statement := strings.TrimSpace(strings.Join(cmd.Nouns, " "))
+		if statement != "" {
+			a.Broadcast(a.SelfOmit(), "%s says %s", a.Name(), statement)
+		}
 	case "tell", "whisper":
 		// TODO handle cross thing communication.
 		// start with location first, region, then branch out to world

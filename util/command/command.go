@@ -31,6 +31,9 @@ func New(issuer thing.Interface, statement string) *Command {
 
 // Parses the provided statement into the command. Replacing the
 // current verb, nous, target, and statement values.
+//
+// TODO Allow quotes in commands to group words together
+//
 func (c *Command) Parse(statment string) {
 	c.Statement = strings.Fields(statment)
 	if l := len(c.Statement); l > 0 {
