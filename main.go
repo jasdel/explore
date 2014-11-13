@@ -1,13 +1,13 @@
 package main
 
 import (
-	// "github.com/davecheney/profile"
 	"github.com/jasdel/explore/entity/actor"
 	"github.com/jasdel/explore/entity/actor/player"
 	"github.com/jasdel/explore/entity/location"
 	"github.com/jasdel/explore/entity/location/region"
 	"github.com/jasdel/explore/entity/thing"
 	"github.com/jasdel/explore/util/uid"
+	// "github.com/pkg/profile"
 )
 
 //
@@ -17,7 +17,7 @@ import (
 // and shutdown command processing.
 //
 func main() {
-	// defer profile.Start(profile.CPUProfile).Stop()
+	// defer profile.Start().Stop()
 
 	doneCh := make(chan struct{})
 
