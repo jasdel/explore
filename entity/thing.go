@@ -1,17 +1,17 @@
-package thing
+package entity
 
 import (
 	"github.com/jasdel/explore/util/uid"
 	"strings"
 )
 
-type Interface interface {
+type ThingInterface interface {
 	uid.Interface
 	Name() string
 	Desc() string
 	Aliases() []string
 	IsAlias(string) bool
-	SelfOmit() []Interface
+	SelfOmit() []ThingInterface
 }
 
 type Thing struct {
@@ -20,22 +20,22 @@ type Thing struct {
 	desc    string
 	aliases []string
 
-	selfOmit []Interface
+	selfOmit []ThingInterface
 }
 
-func NewNoAliases(id uid.UID, name, desc string) *Thing {
-	return New(id, name, desc, []string{})
+func NewThingNoAliases(id uid.UID, name, desc string) *Thing {
+	return NewThing(id, name, desc, []string{})
 }
 
 // Returns a new Thing from the values provided
-func New(id uid.UID, name, desc string, aliases []string) *Thing {
+func NewThing(id uid.UID, name, desc string, aliases []string) *Thing {
 	t := &Thing{
 		UID:     id,
 		name:    name,
 		desc:    desc,
 		aliases: aliases,
 	}
-	t.selfOmit = []Interface{t}
+	t.selfOmit = []ThingInterface{t}
 
 	return t
 }
@@ -72,12 +72,12 @@ func (t *Thing) IsAlias(alias string) bool {
 
 // Returns a pre-build omit interface list so
 // one doesn't need to be created for broadcasts
-func (t *Thing) SelfOmit() []Interface {
+func (t *Thing) SelfOmit() []ThingInterface {
 	return t.selfOmit
 }
 
 // Utility method to convert list of things to string
-func SliceToString(things []Interface) string {
+func ThingsToString(things []ThingInterface) string {
 	var output string
 	for _, t := range things {
 		output += t.Name() + "\n"

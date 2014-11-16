@@ -1,8 +1,6 @@
-package inventory
+package entity
 
 import (
-	"github.com/jasdel/explore/entity/thing"
-	"github.com/jasdel/explore/util/command"
 	"sync"
 )
 
@@ -10,28 +8,28 @@ const (
 	notFound = -1
 )
 
-type Interface interface {
-	Add(thing.Interface) bool
-	Remove(thing.Interface) bool
-	Contains(thing.Interface) bool
-	List(omit ...thing.Interface) []thing.Interface
+type InventoryInterface interface {
+	Add(ThingInterface) bool
+	Remove(ThingInterface) bool
+	Contains(ThingInterface) bool
+	List(omit ...ThingInterface) []ThingInterface
 }
 
 type Inventory struct {
-	things []thing.Interface
+	things []ThingInterface
 
 	mutex sync.RWMutex
 }
 
-func New(initialCap int) *Inventory {
+func NewInventory(initialCap int) *Inventory {
 	return &Inventory{
-		things: make([]thing.Interface, 0, initialCap),
+		things: make([]ThingInterface, 0, initialCap),
 	}
 }
 
 // Adds the given thing to the inventory, ignoring the
 // command if the exact thing already exists.
-func (i *Inventory) Add(t thing.Interface) bool {
+func (i *Inventory) Add(t ThingInterface) bool {
 	if find(t, i.things) == notFound {
 		i.things = append(i.things, t)
 		return true
@@ -40,7 +38,7 @@ func (i *Inventory) Add(t thing.Interface) bool {
 }
 
 // Removes the given item from the inventory if it exists
-func (i *Inventory) Remove(t thing.Interface) bool {
+func (i *Inventory) Remove(t ThingInterface) bool {
 	if idx := find(t, i.things); idx != notFound {
 		i.things = append(i.things[:idx], i.things[idx+1:]...)
 		return true
@@ -49,11 +47,11 @@ func (i *Inventory) Remove(t thing.Interface) bool {
 }
 
 // Returns if the thing is within the inventory
-func (i *Inventory) Contains(t thing.Interface) bool {
+func (i *Inventory) Contains(t ThingInterface) bool {
 	return find(t, i.things) != notFound
 }
 
-// List returns a slice of thing.Interface in the Inventory, possibly with
+// List returns a slice of ThingInterface in the Inventory, possibly with
 // specific items omitted. An example of when you want to omit something is when
 // a Player does something - you send a specific message to the player:
 //
@@ -68,8 +66,8 @@ func (i *Inventory) Contains(t thing.Interface) bool {
 //
 // Note that locations implement an inventory to store what mobiles/players and
 // things are present which is why this works.
-func (i *Inventory) List(omit ...thing.Interface) []thing.Interface {
-	things := make([]thing.Interface, 0, len(i.things))
+func (i *Inventory) List(omit ...ThingInterface) []ThingInterface {
+	things := make([]ThingInterface, 0, len(i.things))
 
 	for _, t := range i.things {
 		if find(t, omit) != notFound {
@@ -88,14 +86,14 @@ func (i *Inventory) Len() int {
 
 // Processes the given command against each item in the inventory
 // until it is handled, or all items are processed
-func (i *Inventory) Process(cmd *command.Command) bool {
+func (i *Inventory) Process(cmd *Command) bool {
 	for _, t := range i.things {
 		// Don't process the command issuer - gets very recursive!
 		if t.IsAlso(cmd.Issuer) {
 			continue
 		}
 
-		if t, ok := t.(command.Processor); ok {
+		if t, ok := t.(Processor); ok {
 			if t.Process(cmd) {
 				return true
 			}
@@ -106,7 +104,7 @@ func (i *Inventory) Process(cmd *command.Command) bool {
 
 // Searches through the list of things for the target.
 // returning its index if found.
-func find(t thing.Interface, things []thing.Interface) int {
+func find(t ThingInterface, things []ThingInterface) int {
 	for i := 0; i < len(things); i++ {
 		if things[i].IsAlso(t) {
 			return i

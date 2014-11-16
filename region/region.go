@@ -2,35 +2,34 @@ package region
 
 import (
 	"fmt"
-	"github.com/jasdel/explore/entity/location"
-	"github.com/jasdel/explore/util/command"
+	"github.com/jasdel/explore/entity"
 	"sync"
 )
 
 type Region struct {
 	name string
 
-	locs map[location.Interface]struct{}
+	locs map[entity.LocationInterface]struct{}
 
-	CmdCh  chan *command.Command
-	MoveCh chan location.ThingMove
+	CmdCh  chan *entity.Command
+	MoveCh chan entity.ThingMove
 
 	locMtx sync.Mutex
 }
 
-func New(name string) *Region {
+func NewRegion(name string) *Region {
 	return &Region{
 		name:   name,
-		locs:   make(map[location.Interface]struct{}),
-		CmdCh:  make(chan *command.Command, 10),
-		MoveCh: make(chan location.ThingMove, 10),
+		locs:   make(map[entity.LocationInterface]struct{}),
+		CmdCh:  make(chan *entity.Command, 10),
+		MoveCh: make(chan entity.ThingMove, 10),
 	}
 }
 
 // Adds a location to the region.  The location should
 // of been initialized to use this region's cmd and
 // move channels.
-func (r *Region) AddLoc(loc location.Interface) {
+func (r *Region) AddLoc(loc entity.LocationInterface) {
 	r.locMtx.Lock()
 	defer r.locMtx.Unlock()
 
@@ -40,7 +39,7 @@ func (r *Region) AddLoc(loc location.Interface) {
 }
 
 // Returns true of the location is apart of this region.
-func (r *Region) hasLoc(loc location.Interface) bool {
+func (r *Region) hasLoc(loc entity.LocationInterface) bool {
 	r.locMtx.Lock()
 	defer r.locMtx.Unlock()
 
@@ -74,8 +73,8 @@ func (r *Region) Run(doneCh chan struct{}) {
 // TODO Should commands/moves received for other regions be forwarded?
 // 		How to prevent endless loop is so?
 //
-func (r *Region) command(cmd *command.Command) {
-	locatable, ok := cmd.Issuer.(location.Locatable)
+func (r *Region) command(cmd *entity.Command) {
+	locatable, ok := cmd.Issuer.(entity.Locatable)
 	if !ok {
 		fmt.Println("Region.command: ERROR:", r.name, "received command without being locatable.", cmd.Issuer.Name(), cmd.Issuer.UniqueId())
 	}
@@ -94,7 +93,7 @@ func (r *Region) command(cmd *command.Command) {
 	}
 
 	// first let the issuer process the command.
-	if processor, ok := cmd.Issuer.(command.Processor); ok && processor.Process(cmd) {
+	if processor, ok := cmd.Issuer.(entity.Processor); ok && processor.Process(cmd) {
 		return
 	}
 
@@ -111,7 +110,7 @@ func (r *Region) command(cmd *command.Command) {
 //
 // TODO ensure destination location belongs to this region
 //
-func (r *Region) move(move location.ThingMove) {
+func (r *Region) move(move entity.ThingMove) {
 	fmt.Println("Region.move: DEBUG:", r.name, "move received from", move.Thing.Name(), move.Thing.UniqueId(), "to", move.ToLoc.Name(), move.ToLoc.UniqueId())
 
 	if !r.hasLoc(move.ToLoc) {
@@ -121,5 +120,5 @@ func (r *Region) move(move location.ThingMove) {
 
 	move.ToLoc.Add(move.Thing)
 	move.ToLoc.Broadcast(move.Thing.SelfOmit(), move.EnterMsg)
-	move.ToLoc.Process(command.New(move.Thing, "look"))
+	move.ToLoc.Process(entity.NewCommand(move.Thing, "look"))
 }

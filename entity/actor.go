@@ -1,41 +1,44 @@
-package actor
+package entity
 
 import (
 	"fmt"
-	"github.com/jasdel/explore/entity/location"
-	"github.com/jasdel/explore/entity/thing"
-	"github.com/jasdel/explore/util/command"
-	"github.com/jasdel/explore/util/inventory"
-	"github.com/jasdel/explore/util/messaging"
 	"github.com/jasdel/explore/util/uid"
 	"strings"
 	"sync"
 )
 
-type Interface interface {
-	thing.Interface
-	inventory.Interface
-	location.Locatable
-	messaging.Broadcaster
+type NPCInterface interface {
+	ActorInterface
+}
+
+type PlayerInterface interface {
+	ActorInterface
+}
+
+type ActorInterface interface {
+	ThingInterface
+	InventoryInterface
+	Locatable
+	Broadcaster
 }
 
 type Actor struct {
-	*thing.Thing
-	inventory.Inventory
-	atLoc location.Interface
+	*Thing
+	Inventory
+	atLoc LocationInterface
 
 	locateMtx sync.Mutex
 }
 
 // Create a new actor
-func New(id uid.UID, name, desc string, aliases []string) *Actor {
+func NewActor(id uid.UID, name, desc string, aliases []string) *Actor {
 	return &Actor{
-		Thing: thing.New(id, name, desc, aliases),
+		Thing: NewThing(id, name, desc, aliases),
 	}
 }
 
 // Returns the location the Actor is currently at
-func (a *Actor) Locate() location.Interface {
+func (a *Actor) Locate() LocationInterface {
 	a.locateMtx.Lock()
 	defer a.locateMtx.Unlock()
 
@@ -45,7 +48,7 @@ func (a *Actor) Locate() location.Interface {
 }
 
 // Updates the location of the actor
-func (a *Actor) Relocate(loc location.Interface) location.Interface {
+func (a *Actor) Relocate(loc LocationInterface) LocationInterface {
 	a.locateMtx.Lock()
 	defer a.locateMtx.Unlock()
 
@@ -56,10 +59,10 @@ func (a *Actor) Relocate(loc location.Interface) location.Interface {
 }
 
 // Processes the actors specific commands
-func (a *Actor) Process(cmd *command.Command) bool {
+func (a *Actor) Process(cmd *Command) bool {
 	switch cmd.Verb {
 	case "inventory", "inv", "i":
-		inv := thing.SliceToString(a.List(cmd.Issuer))
+		inv := ThingsToString(a.List(cmd.Issuer))
 		cmd.Respond(inv)
 	case "say":
 		statement := strings.TrimSpace(strings.Join(cmd.Nouns, " "))
@@ -67,7 +70,7 @@ func (a *Actor) Process(cmd *command.Command) bool {
 			a.Broadcast(a.SelfOmit(), "%s says %s", a.Name(), statement)
 		}
 	case "tell", "whisper":
-		// TODO handle cross thing communication.
+		// TODO handle cross entity communication.
 		// start with location first, region, then branch out to world
 	default:
 		// Give the inventory a chance to process the command
@@ -83,7 +86,7 @@ func (a *Actor) Process(cmd *command.Command) bool {
 }
 
 // Broadcasts the message to the location, if the actor is in that location.
-func (a *Actor) Broadcast(omit []thing.Interface, format string, any ...interface{}) {
+func (a *Actor) Broadcast(omit []ThingInterface, format string, any ...interface{}) {
 	if a.atLoc != nil {
 		a.atLoc.Broadcast(omit, format, any...)
 	} else {

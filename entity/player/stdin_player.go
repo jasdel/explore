@@ -3,7 +3,7 @@ package player
 import (
 	"bufio"
 	"fmt"
-	"github.com/jasdel/explore/util/command"
+	"github.com/jasdel/explore/entity"
 	"os"
 	"strings"
 )
@@ -18,7 +18,7 @@ func (p *StdInPlayer) ReadStdIn() {
 	for s.Scan() {
 		cmd := strings.TrimSpace(s.Text())
 		if l := p.Locate(); l != nil && cmd != "" {
-			l.Command(command.New(p, cmd))
+			l.Command(entity.NewCommand(p, cmd))
 		}
 	}
 }

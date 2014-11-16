@@ -1,9 +1,7 @@
-package location
+package entity
 
 import (
 	"fmt"
-	"github.com/jasdel/explore/entity/thing"
-	"github.com/jasdel/explore/util/command"
 	"strings"
 )
 
@@ -18,7 +16,7 @@ type Exit struct {
 	Aliases   []string
 	ExitMsg   string
 	EnterMsg  string
-	Loc       Interface
+	Loc       LocationInterface
 	LookAhead string
 }
 
@@ -28,7 +26,7 @@ type Exit struct {
 // TODO need to refactor how locatables are moved between locations. This method
 // 'works', but may not be safe.
 //
-func (e *Exit) Process(cmd *command.Command) bool {
+func (e *Exit) Process(cmd *Command) bool {
 
 	if e.Name == cmd.Verb {
 		e.exit(cmd.Issuer)
@@ -46,7 +44,7 @@ func (e *Exit) Process(cmd *command.Command) bool {
 }
 
 // Moves the thing out of its current location and into a new location.
-func (e *Exit) exit(t thing.Interface) {
+func (e *Exit) exit(t ThingInterface) {
 	locatable, ok := t.(Locatable)
 	if !ok {
 		fmt.Printf("Exit.exit: DEBUG: %s is not a locatable. %#v\n", e.Name, t)

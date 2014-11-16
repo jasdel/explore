@@ -1,11 +1,7 @@
-package location
+package entity
 
 import (
 	"fmt"
-	"github.com/jasdel/explore/entity/thing"
-	"github.com/jasdel/explore/util/command"
-	"github.com/jasdel/explore/util/inventory"
-	"github.com/jasdel/explore/util/messaging"
 	"github.com/jasdel/explore/util/uid"
 	"sync"
 )
@@ -15,43 +11,44 @@ import (
 type Locatable interface {
 	// Relocates a Locatable to a new location,
 	// returning the original location
-	Relocate(Interface) Interface
+	Relocate(LocationInterface) LocationInterface
 
 	// Locate gets a Locatable's current location
-	Locate() Interface
+	Locate() LocationInterface
 }
 
 // interface for all locations
-type Interface interface {
-	thing.Interface
-	inventory.Interface
-	command.Processor
-	messaging.Broadcaster
+type LocationInterface interface {
+	ThingInterface
+	InventoryInterface
+	Processor
+
+	Broadcaster
 
 	Exits() Exits
 	LinkExit(e Exit)
 
 	// A Thing is moving into this location
-	MoveIn(thing thing.Interface, from Interface, enterMsg string)
-	Command(*command.Command)
+	MoveIn(thing ThingInterface, from LocationInterface, enterMsg string)
+	Command(*Command)
 }
 
 // Specific location on the
 type Location struct {
-	*thing.Thing
-	inventory.Inventory
+	*Thing
+	Inventory
 	exits Exits
 
 	moveCh chan ThingMove
-	cmdCh  chan *command.Command
+	cmdCh  chan *Command
 
 	linkMtx sync.Mutex
 }
 
 // Creates a new area
-func New(id uid.UID, name, desc string, cmdCh chan *command.Command, moveCh chan ThingMove) *Location {
+func NewLocation(id uid.UID, name, desc string, cmdCh chan *Command, moveCh chan ThingMove) *Location {
 	return &Location{
-		Thing:  thing.New(id, name, desc, []string{}),
+		Thing:  NewThing(id, name, desc, []string{}),
 		moveCh: moveCh,
 		cmdCh:  cmdCh,
 	}
@@ -80,23 +77,23 @@ func (l *Location) LinkExit(e Exit) {
 
 // Broadcast sends a message to all responders at this location. This
 // implements the broadcast.Interface - see that for more details.
-func (l *Location) Broadcast(omit []thing.Interface, format string, any ...interface{}) {
+func (l *Location) Broadcast(omit []ThingInterface, format string, any ...interface{}) {
 	for _, t := range l.Inventory.List(omit...) {
-		if responder, ok := t.(messaging.Responder); ok {
+		if responder, ok := t.(Responder); ok {
 			responder.Respond(format, any...)
 		}
 	}
 }
 
 type ThingMove struct {
-	Thing    thing.Interface
-	ToLoc    Interface
+	Thing    ThingInterface
+	ToLoc    LocationInterface
 	EnterMsg string
 	Spawn    bool
 }
 
 // Moves a thing from this location from another
-func (l *Location) MoveIn(t thing.Interface, from Interface, enterMsg string) {
+func (l *Location) MoveIn(t ThingInterface, from LocationInterface, enterMsg string) {
 	if _, ok := t.(Locatable); !ok {
 		fmt.Println("Location.Move: DEBUG:", l.Name(), l.UniqueId(), "thing", t.Name(), t.UniqueId(), "is not locatable")
 		return
@@ -110,7 +107,7 @@ func (l *Location) MoveIn(t thing.Interface, from Interface, enterMsg string) {
 }
 
 // Spawns the thing into the
-func (l *Location) Spawn(t thing.Interface) {
+func (l *Location) Spawn(t ThingInterface) {
 	locatable, ok := t.(Locatable)
 	if !ok {
 		fmt.Println("Location.Spawn: DEBUG:", l.Name(), l.UniqueId(), "thing", t.Name(), t.UniqueId(), "is not locatable")
@@ -119,7 +116,7 @@ func (l *Location) Spawn(t thing.Interface) {
 
 	locatable.Relocate(l)
 
-	messaging.Respond(t, "You look around dazed as a swirl of smoke fades around you.")
+	Respond(t, "You look around dazed as a swirl of smoke fades around you.")
 	l.moveCh <- ThingMove{
 		Thing:    t,
 		ToLoc:    l,
@@ -129,12 +126,12 @@ func (l *Location) Spawn(t thing.Interface) {
 }
 
 // Sends the command to be processed by this location
-func (l *Location) Command(cmd *command.Command) {
+func (l *Location) Command(cmd *Command) {
 	l.cmdCh <- cmd
 }
 
 // Processes the command within the scope of the area
-func (l *Location) Process(cmd *command.Command) bool {
+func (l *Location) Process(cmd *Command) bool {
 	// Give exits first chance to run so actors can leave the area
 	for _, e := range l.Exits() {
 		if e.Process(cmd) {
@@ -171,15 +168,15 @@ func (l *Location) Process(cmd *command.Command) bool {
 }
 
 // Responds with the location's description and known visible exits
-func (l *Location) look(cmd *command.Command) bool {
-	inv := thing.SliceToString(l.List(cmd.Issuer))
+func (l *Location) look(cmd *Command) bool {
+	inv := ThingsToString(l.List(cmd.Issuer))
 
 	cmd.Respond("You see: %s\n\nObvious exits: %s\n\n%s", l.Desc(), l.Exits().String(), inv)
 	return true
 }
 
 // lists all known exists
-func (l *Location) listExists(cmd *command.Command) bool {
+func (l *Location) listExists(cmd *Command) bool {
 	cmd.Respond("Visible exits:\n%s", l.Exits().String())
 	return true
 }

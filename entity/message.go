@@ -1,11 +1,10 @@
 // Structure and comments originally copied from Andrew 'Diddymus' Rolfe WolfMUD (2012)
 
 // Definition of the messaging interface
-package messaging
+package entity
 
 import (
 	"fmt"
-	"github.com/jasdel/explore/entity/thing"
 )
 
 // Respond should be implemented by anything that wants to 'respond' to players.
@@ -18,7 +17,7 @@ type Responder interface {
 }
 
 // Helper method to simplify sending a respond to a thing.
-func Respond(t thing.Interface, format string, any ...interface{}) {
+func Respond(t ThingInterface, format string, any ...interface{}) {
 	if responder, ok := t.(Responder); ok {
 		responder.Respond(format, any...)
 	} else {
@@ -36,8 +35,8 @@ func Respond(t thing.Interface, format string, any ...interface{}) {
 // from the message broadcast to the world:
 //
 //	cmd.Respond("You sneeze. Aaahhhccchhhooo!")
-//	cmd.Broadcast([]thing.Interface{p}, "You see %s sneeze.", cmd.Issuer.Name())
+//	cmd.Broadcast([]entity.ThingInterface{p}, "You see %s sneeze.", cmd.Issuer.Name())
 //	PlayerList.Broadcast(p.Locate().List(), "You hear a loud sneeze.")
 type Broadcaster interface {
-	Broadcast(omit []thing.Interface, format string, any ...interface{})
+	Broadcast(omit []ThingInterface, format string, any ...interface{})
 }

@@ -1,8 +1,6 @@
-package command
+package entity
 
 import (
-	"github.com/jasdel/explore/entity/thing"
-	"github.com/jasdel/explore/util/messaging"
 	"strings"
 )
 
@@ -15,7 +13,7 @@ type Processor interface {
 }
 
 type Command struct {
-	Issuer    thing.Interface
+	Issuer    ThingInterface
 	Statement []string // words in the command
 	Verb      string   // first word in the statement. e.g get, examine, attack, ...
 	Nouns     []string // 2nd : nth words, usually what is being
@@ -23,7 +21,7 @@ type Command struct {
 }
 
 // Creates a new instance of a command, with the statement parsed.
-func New(issuer thing.Interface, statement string) *Command {
+func NewCommand(issuer ThingInterface, statement string) *Command {
 	cmd := &Command{Issuer: issuer}
 	cmd.Parse(statement)
 	return cmd
@@ -50,5 +48,5 @@ func (c *Command) Parse(statment string) {
 
 // Sends a message back directly to the issuer of the command
 func (c *Command) Respond(format string, any ...interface{}) {
-	messaging.Respond(c.Issuer, format, any...)
+	Respond(c.Issuer, format, any...)
 }
