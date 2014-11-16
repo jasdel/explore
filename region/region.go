@@ -119,6 +119,6 @@ func (r *Region) move(move entity.ThingMove) {
 	}
 
 	move.ToLoc.Add(move.Thing)
-	move.ToLoc.Broadcast(move.Thing.SelfOmit(), move.EnterMsg)
+	move.ToLoc.Broadcast(move.Thing.OmitSelf(), move.EnterMsg)
 	move.ToLoc.Process(entity.NewCommand(move.Thing, "look"))
 }

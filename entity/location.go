@@ -48,7 +48,7 @@ type Location struct {
 // Creates a new area
 func NewLocation(id uid.UID, name, desc string, cmdCh chan *Command, moveCh chan ThingMove) *Location {
 	return &Location{
-		Thing:  NewThing(id, name, desc, []string{}),
+		Thing:  NewThing(id, name, desc, Aliases{}),
 		moveCh: moveCh,
 		cmdCh:  cmdCh,
 	}

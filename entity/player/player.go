@@ -12,6 +12,6 @@ type Player struct {
 // Creates a new player instance
 func NewPlayer(id uid.UID, name, desc string) *Player {
 	return &Player{
-		Actor: entity.NewActor(id, name, desc, []string{}),
+		Actor: entity.NewActor(id, name, desc, entity.Aliases{}),
 	}
 }

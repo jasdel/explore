@@ -50,3 +50,8 @@ func (c *Command) Parse(statment string) {
 func (c *Command) Respond(format string, any ...interface{}) {
 	Respond(c.Issuer, format, any...)
 }
+
+// Sends a broadcast to the command issuer's location
+func (c *Command) Broadcast(omit []ThingInterface, format string, any ...interface{}) {
+	Broadcast(c.Issuer, omit, format, any...)
+}

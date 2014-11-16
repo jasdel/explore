@@ -86,6 +86,9 @@ func (i *Inventory) Len() int {
 
 // Processes the given command against each item in the inventory
 // until it is handled, or all items are processed
+//
+// TODO should handle drop all and pickup all
+//
 func (i *Inventory) Process(cmd *Command) bool {
 	for _, t := range i.things {
 		// Don't process the command issuer - gets very recursive!

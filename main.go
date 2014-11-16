@@ -47,7 +47,7 @@ func main() {
 	})
 
 	p := &player.StdInPlayer{Player: player.NewPlayer(<-uid.Next, "You", "its you silly")}
-	p.Add(entity.NewThing(<-uid.Next, "Spoon", "a old four foot long wooden spoon", []string{"spoon"}))
+	p.Add(entity.NewItem(<-uid.Next, "Spoon", "a old four foot long wooden spoon", []string{"spoon"}))
 
 	act := entity.NewActor(<-uid.Next, "Place Holder Actor", "Place holder actor", []string{"actor"})
 

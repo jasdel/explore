@@ -5,30 +5,41 @@ import (
 	"strings"
 )
 
+type Aliases []string
+
+func (a Aliases) Match(name string) bool {
+	for i := 0; i < len(a); i++ {
+		if a[i] == name {
+			return true
+		}
+	}
+	return false
+}
+
 type ThingInterface interface {
 	uid.Interface
 	Name() string
 	Desc() string
-	Aliases() []string
+	Aliases() Aliases
 	IsAlias(string) bool
-	SelfOmit() []ThingInterface
+	OmitSelf() []ThingInterface
 }
 
 type Thing struct {
 	uid.UID
 	name    string
 	desc    string
-	aliases []string
+	aliases Aliases
 
 	selfOmit []ThingInterface
 }
 
 func NewThingNoAliases(id uid.UID, name, desc string) *Thing {
-	return NewThing(id, name, desc, []string{})
+	return NewThing(id, name, desc, Aliases{})
 }
 
 // Returns a new Thing from the values provided
-func NewThing(id uid.UID, name, desc string, aliases []string) *Thing {
+func NewThing(id uid.UID, name, desc string, aliases Aliases) *Thing {
 	t := &Thing{
 		UID:     id,
 		name:    name,
@@ -51,8 +62,8 @@ func (t *Thing) Desc() string {
 }
 
 // Returns a copy of the aliases for this thing
-func (t *Thing) Aliases() []string {
-	a := make([]string, len(t.aliases))
+func (t *Thing) Aliases() Aliases {
+	a := make(Aliases, len(t.aliases))
 	copy(a, t.aliases)
 	return a
 }
@@ -61,18 +72,12 @@ func (t *Thing) Aliases() []string {
 // for this thing. the alias is trimmed, and lowercased
 // before comparison.
 func (t *Thing) IsAlias(alias string) bool {
-	aliasLower := strings.ToLower(alias)
-	for i := 0; i < len(t.aliases); i++ {
-		if t.aliases[i] == aliasLower {
-			return true
-		}
-	}
-	return false
+	return t.aliases.Match(strings.ToLower(alias))
 }
 
 // Returns a pre-build omit interface list so
 // one doesn't need to be created for broadcasts
-func (t *Thing) SelfOmit() []ThingInterface {
+func (t *Thing) OmitSelf() []ThingInterface {
 	return t.selfOmit
 }
 

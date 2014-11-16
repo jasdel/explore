@@ -40,3 +40,10 @@ func Respond(t ThingInterface, format string, any ...interface{}) {
 type Broadcaster interface {
 	Broadcast(omit []ThingInterface, format string, any ...interface{})
 }
+
+// Helper method to simplify broadcasts to a thing
+func Broadcast(t ThingInterface, omit []ThingInterface, format string, any ...interface{}) {
+	if broadcaster, ok := t.(Broadcaster); ok {
+		broadcaster.Broadcast(omit, format, any...)
+	}
+}

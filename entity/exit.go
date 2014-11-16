@@ -53,7 +53,7 @@ func (e *Exit) exit(t ThingInterface) {
 
 	origLoc := locatable.Relocate(e.Loc)
 	if origLoc != nil {
-		origLoc.Broadcast(t.SelfOmit(), e.ExitMsg, t.Name(), e.Name)
+		origLoc.Broadcast(t.OmitSelf(), e.ExitMsg, t.Name(), e.Name)
 		origLoc.Remove(t)
 	}
 	fmt.Println("Exit.Process: DEBUG:", e.Name, "relocated", t.Name(), t.UniqueId(), origLoc.Name(), origLoc.UniqueId())

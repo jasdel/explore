@@ -31,7 +31,7 @@ type Actor struct {
 }
 
 // Create a new actor
-func NewActor(id uid.UID, name, desc string, aliases []string) *Actor {
+func NewActor(id uid.UID, name, desc string, aliases Aliases) *Actor {
 	return &Actor{
 		Thing: NewThing(id, name, desc, aliases),
 	}
@@ -67,11 +67,12 @@ func (a *Actor) Process(cmd *Command) bool {
 	case "say":
 		statement := strings.TrimSpace(strings.Join(cmd.Nouns, " "))
 		if statement != "" {
-			a.Broadcast(a.SelfOmit(), "%s says %s", a.Name(), statement)
+			cmd.Broadcast(a.OmitSelf(), "%s says %s", a.Name(), statement)
 		}
 	case "tell", "whisper":
 		// TODO handle cross entity communication.
 		// start with location first, region, then branch out to world
+
 	default:
 		// Give the inventory a chance to process the command
 		if a.Inventory.Process(cmd) {
