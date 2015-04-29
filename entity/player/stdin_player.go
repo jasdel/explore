@@ -12,7 +12,7 @@ type StdInPlayer struct {
 	*Player
 }
 
-func (p *StdInPlayer) ReadStdIn() {
+func (p *StdInPlayer) Run() {
 	s := bufio.NewScanner(os.Stdin)
 
 	for s.Scan() {

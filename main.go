@@ -6,6 +6,7 @@ import (
 	"github.com/jasdel/explore/region"
 	"github.com/jasdel/explore/util/uid"
 	// "github.com/pkg/profile"
+	"github.com/jasdel/explore/entity/npc"
 )
 
 //
@@ -46,15 +47,19 @@ func main() {
 		ExitMsg: entity.DirectionalExitMsgFmt, EnterMsg: entity.DirectionalEnterMsgFmt,
 	})
 
+	rnd := &npc.RndNPC{NPC: npc.NewNPC(<-uid.Next, "Billy Bob Thorton", "A mysterious wonderer.")}
+
 	p := &player.StdInPlayer{Player: player.NewPlayer(<-uid.Next, "You", "its you silly")}
 	p.Add(entity.NewItem(<-uid.Next, "Spoon", "a old four foot long wooden spoon", []string{"spoon"}))
 
 	act := entity.NewActor(<-uid.Next, "Place Holder Actor", "Place holder actor", []string{"actor"})
 
+	start.Spawn(rnd)
 	start.Spawn(p)
 	start.Spawn(act)
 
-	go p.ReadStdIn()
+	go p.Run()
+	go rnd.Run()
 
 	<-doneCh
 }
